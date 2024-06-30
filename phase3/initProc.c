@@ -7,23 +7,23 @@
 #include "./include/initProc.h"
 #include "../klog.c"
 
-support_t ss_array[UPROCMAX]; // array di strutture di supporto
-state_t UProc_state[UPROCMAX]; // array di stati dei processi utente
-pcb_t *swap_mutex_pcb; // puntatore al processo mutex per lo swap
-swap_t swap_pool_table[POOLSIZE]; // tabella di swap
-pcb_t *sst_array[UPROCMAX]; // array di puntatori ai processi SST
-pcb_t *terminal_pcbs[UPROCMAX]; // array di puntatori ai processi terminali
-pcb_t *printer_pcbs[UPROCMAX]; // array di puntatori ai processi stampanti
-pcb_t *swap_mutex_process; // puntatore al processo mutex per lo swap
-pcb_t *test_pcb; // puntatore al processo di test
+support_t ss_array[UPROCMAX];       // array di strutture di supporto
+state_t UProc_state[UPROCMAX];      // array di stati dei processi utente
+pcb_t *swap_mutex_pcb;              // puntatore al processo mutex per lo swap
+swap_t swap_pool_table[POOLSIZE];   // tabella di swap
+pcb_t *sst_array[UPROCMAX];         // array di puntatori ai processi SST
+pcb_t *terminal_pcbs[UPROCMAX];     // array di puntatori ai processi terminali
+pcb_t *printer_pcbs[UPROCMAX];      // array di puntatori ai processi stampanti
+pcb_t *swap_mutex_process;          // puntatore al processo mutex per lo swap
+pcb_t *test_pcb;                    // puntatore al processo di test
 
-state_t swap_mutex_state; // stato del processo mutex per lo swap
-memaddr curr; // indirizzo corrente
+state_t swap_mutex_state;           // stato del processo mutex per lo swap
+memaddr curr;                       // indirizzo corrente
 
-extern pcb_t *ssi_pcb; // puntatore al processo SSI
-extern pcb_t *current_process; // puntatore al processo corrente
+extern pcb_t *ssi_pcb;              // puntatore al processo SSI
+extern pcb_t *current_process;      // puntatore al processo corrente
 
-/*
+/* 
  * Funzione per la creazione di un processo.
  * Riceve come argomenti lo stato del processo e la struttura di supporto.
  * Restituisce il puntatore al processo creato.
@@ -40,13 +40,9 @@ pcb_t *create_process(state_t *s, support_t *sup)
         .arg = &ssi_create_process,
     };
 
-    
-
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&payload, 0);
     SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, (unsigned int)(&p), 0);
 
-    //klog_print_hex((unsigned int)p);
-    //klog_print("\n");
     return p;
 }
 

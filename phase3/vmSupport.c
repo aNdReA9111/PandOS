@@ -53,7 +53,6 @@ static void cleanDirtyPage(int sp_index){
  * @return lo stato dell'operazione di I/O
  */
 static int RWBackingStore(int page_no, int asid, memaddr addr, int w) {
-    //setSTATUS(getSTATUS() & (~IECON)); // disabilito interrupt per avere atomicita'
     dtpreg_t *device_register = (dtpreg_t *)DEV_REG_ADDR(IL_FLASH, asid - 1);
     device_register->data0 = addr; 
 
@@ -72,12 +71,18 @@ static int RWBackingStore(int page_no, int asid, memaddr addr, int w) {
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)(&payload), 0);
     SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, (unsigned int)(&status), 0);
 
-    //setSTATUS(getSTATUS() | IECON); // riabilito interrupt per rilasciare l'atomicita'
     return status;
 }
 
+
 static void kill_proc(){
-    SYSCALL(SENDMESSAGE, (unsigned int)swap_mutex_process, 0, 0);
+
+    // setto tutte le oagine del processo dell'asid da terminare come non occupate
+    for(int i = 0; i < POOLSIZE; i++){
+        if(swap_pool_table[i].sw_asid == current_process->p_supportStruct->sup_asid)
+            swap_pool_table[i].sw_asid = NOPROC;
+        
+    }
 
     ssi_payload_t term_process_payload = {
         .service_code = TERMPROCESS,
@@ -131,7 +136,7 @@ void pager(){
 
         swap_t *swap_pool_entry = &swap_pool_table[i];
 
-        if(swap_pool_entry->sw_asid != -1){
+        if(swap_pool_entry->sw_asid != NOPROC){
             pager_bp2();
             
             cleanDirtyPage(i); 
@@ -140,6 +145,7 @@ void pager(){
             status = RWBackingStore(swap_pool_entry->sw_pageNo, swap_pool_entry->sw_asid, victim_addr, 1);
             
             if(status != 1) {
+                SYSCALL(SENDMESSAGE, (unsigned int)swap_mutex_process, 0, 0);
                 kill_proc(); //tratto gli errori come se fossere program trap
             }
         }
@@ -147,6 +153,7 @@ void pager(){
         //read backing store/flash
         status = RWBackingStore(p, sup_st->sup_asid, victim_addr, 0);
         if(status != 1) {
+            SYSCALL(SENDMESSAGE, (unsigned int)swap_mutex_process, 0, 0);
             kill_proc(); //tratto gli errori come se fossere program trap
         }
 
